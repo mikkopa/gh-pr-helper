@@ -13,7 +13,7 @@ namespace net_console_app_base
 {
     class Options
     {
-        [Option('r', "repos", Required = false, HelpText = "Repos folder (uses current folder if none is specified")]
+        [Option('r', "repos", Required = false, HelpText = "Repos folder (uses current folder if none is specified)")]
         public string ReposFolder { get; set; }
 
         [Option('c', "comments-csv", Required = true, HelpText = "A csv file with columns for gh repo folder and the comment")]
@@ -117,7 +117,7 @@ namespace net_console_app_base
         static void HandleParseError(IEnumerable<Error> errs)
         {
             //handle errors
-            Console.WriteLine("Write some usefull info about the app to the user...");
+            Console.WriteLine("Reads comments from the csv file and runs 'gh pr comment --body \"\"' command on each repo. The repos folder must be the base folder for all the repos mentioned in the csv.");
         }
     }
 }

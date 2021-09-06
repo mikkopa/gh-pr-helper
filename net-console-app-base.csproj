@@ -4,6 +4,14 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <RootNamespace>net_console_app_base</RootNamespace>
+    <PublishTrimmed>true</PublishTrimmed>
+    <PublishReadyToRun>true</PublishReadyToRun>
+    <PublishSingleFile>true</PublishSingleFile>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+
+    <Version>1.0.0</Version>
+    <Authors>Mikko Pääkkönen</Authors>
+    <NeutralLanguage>en</NeutralLanguage>    
   </PropertyGroup>
 
   <ItemGroup>
