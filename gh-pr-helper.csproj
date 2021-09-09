@@ -2,8 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AssemblyName>ghprh</AssemblyName>
     <TargetFramework>net5.0</TargetFramework>
-    <RootNamespace>net_console_app_base</RootNamespace>
+    <RootNamespace>gh_pr_helper</RootNamespace>
     <PublishTrimmed>true</PublishTrimmed>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>true</PublishSingleFile>

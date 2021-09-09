@@ -9,7 +9,7 @@ using CommandLine;
 using CsvHelper;
 using CsvHelper.Configuration;
 
-namespace net_console_app_base
+namespace gh_pr_helper
 {
     class Options
     {
@@ -24,6 +24,9 @@ namespace net_console_app_base
 
         [Option('f', "feedback-column", Required = false, HelpText = "The feedback / comment column name (default: comment)")]
         public string FeedbackColumn { get; set; } = "comment";
+
+        [Option('l', "list", Required = false, HelpText = "List only what would happen. Does not execute the GH command.")]
+        public bool List { get; set; }
 
     }
 
@@ -73,10 +76,17 @@ namespace net_console_app_base
                     string path = Path.Combine(opts.ReposFolder, lineData[opts.IdColumn]?.ToString());
                     if (Directory.Exists(path))
                     {
-                        var p = ExecuteCommand($"pr comment --body \"{lineData[opts.FeedbackColumn]}\"", path);
-                        if (p is not null)
+                        if (opts.List)
                         {
-                            await p.WaitForExitAsync();
+                            Console.WriteLine($"\t would run: gh pr comment --body \"{lineData[opts.FeedbackColumn]}\" on path {path}");
+                        }
+                        else
+                        {
+                            var p = ExecuteCommand("gh.exe", $"pr comment --body \"{lineData[opts.FeedbackColumn]}\"", path);
+                            if (p is not null)
+                            {
+                                await p.WaitForExitAsync();
+                            }
                         }
                     }
                     else
@@ -99,18 +109,17 @@ namespace net_console_app_base
             }
         }
 
-        private static Process? ExecuteCommand(string command, string path)
+        private static Process? ExecuteCommand(string file, string arguments, string workingDirectory)
         {
             // Console.WriteLine($"would execute: {command} in {path}");
             ProcessStartInfo processInfo;
-            Process process;
 
-            processInfo = new ProcessStartInfo("gh.exe", command);
-            processInfo.WorkingDirectory = path;
+            processInfo = new ProcessStartInfo(file, arguments);
+            processInfo.WorkingDirectory = workingDirectory;
             processInfo.CreateNoWindow = true;
             processInfo.UseShellExecute = true;
 
-            process = Process.Start(processInfo);
+            Process? process = Process.Start(processInfo);
             return process;
         }
 
