@@ -50,6 +50,7 @@ namespace gh_pr_helper
             {
                 Delimiter = ";",
                 HasHeaderRecord = true,
+                Quote = '"'
             };
 
             if (string.IsNullOrEmpty(opts.ReposFolder))
