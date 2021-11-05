@@ -1,6 +1,6 @@
-# GitHub Classroom assingment PR comment helper
+# GitHub Classroom assignment PR comment helper
 
-This tool is used to provide comments in bulk to GHC assingment answers from a CSV file.
+This tool is used to provide comments in bulk to GHC assignment answers from a CSV file.
 The tool matches the answer repo with the GH username in the csv file and creates a PR comment from the comment text in the CSV file.
 
 ## Requirements
