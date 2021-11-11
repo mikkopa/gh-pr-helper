@@ -1,5 +1,4 @@
-﻿#nullable enable
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -9,125 +8,126 @@ using CommandLine;
 using CsvHelper;
 using CsvHelper.Configuration;
 
-namespace gh_pr_helper
+namespace gh_pr_helper;
+class Options
 {
-    class Options
+    //see nullable behaviour: https://docs.microsoft.com/en-us/dotnet/csharp/nullable-warnings#nonnullable-reference-not-initialized
+
+    [Option('r', "repos", Required = false, HelpText = "Repos folder (uses current folder if none is specified)")]
+    public string ReposFolder { get; set; } = null!;
+
+    [Option('c', "comments-csv", Required = true, HelpText = "A csv file with columns for gh repo folder and the comment")]
+    public string CommentsCsv { get; set; } = null!;
+
+    [Option('i', "id-column", Required = false, HelpText = "The GitHub account id column name (default: id)")]
+    public string IdColumn { get; set; } = "id";
+
+    [Option('f', "feedback-column", Required = false, HelpText = "The feedback / comment column name (default: comment)")]
+    public string FeedbackColumn { get; set; } = "comment";
+
+    [Option('l', "list", Required = false, HelpText = "List only what would happen. Does not execute the GH command.")]
+    public bool List { get; set; }
+
+}
+
+class Program
+{
+    static async Task Main(string[] args)
     {
-        [Option('r', "repos", Required = false, HelpText = "Repos folder (uses current folder if none is specified)")]
-        public string ReposFolder { get; set; }
-
-        [Option('c', "comments-csv", Required = true, HelpText = "A csv file with columns for gh repo folder and the comment")]
-        public string CommentsCsv { get; set; }
-
-        [Option('i', "id-column", Required = false, HelpText = "The GitHub account id column name (default: id)")]
-        public string IdColumn { get; set; } = "id";
-
-        [Option('f', "feedback-column", Required = false, HelpText = "The feedback / comment column name (default: comment)")]
-        public string FeedbackColumn { get; set; } = "comment";
-
-        [Option('l', "list", Required = false, HelpText = "List only what would happen. Does not execute the GH command.")]
-        public bool List { get; set; }
-
+        var result = await CommandLine.Parser.Default.ParseArguments<Options>(args)
+          .WithParsedAsync(RunOptions);
+        result.WithNotParsed(HandleParseError);
     }
 
-    class Program
+    /// <summary>
+    /// The code logic that can use the arguments
+    /// </summary>
+    /// <param name="opts">The arguments parsed from CLI</param>
+    /// <returns></returns>
+    static async Task RunOptions(Options opts)
     {
-        static async Task Main(string[] args)
+        CsvConfiguration config = new CsvConfiguration(CultureInfo.InvariantCulture)
         {
-            var result = await CommandLine.Parser.Default.ParseArguments<Options>(args)
-              .WithParsedAsync(RunOptions);
-            result.WithNotParsed(HandleParseError);
+            Delimiter = ";",
+            HasHeaderRecord = true,
+            Quote = '"'
+        };
+
+        if (string.IsNullOrEmpty(opts.ReposFolder))
+        {
+            opts.ReposFolder = System.IO.Directory.GetCurrentDirectory();
         }
 
-        /// <summary>
-        /// The code logic that can use the arguments
-        /// </summary>
-        /// <param name="opts">The arguments parsed from CLI</param>
-        /// <returns></returns>
-        static async Task RunOptions(Options opts)
+        if (false == System.IO.File.Exists(opts.CommentsCsv))
         {
-            CsvConfiguration config = new CsvConfiguration(CultureInfo.InvariantCulture)
-            {
-                Delimiter = ";",
-                HasHeaderRecord = true,
-                Quote = '"'
-            };
+            Console.WriteLine($"Comments csv file ({opts.CommentsCsv}) does not exist.");
+            return;
+        }
 
-            if (string.IsNullOrEmpty(opts.ReposFolder))
+        // read comments file
+        using (var reader = new StreamReader(opts.CommentsCsv))
+        {
+            int counter = 1;
+            await foreach (var line in ReadAsync(reader, config))
             {
-                opts.ReposFolder = System.IO.Directory.GetCurrentDirectory();
-            }
+                IDictionary<string, Object> lineData = (IDictionary<string, Object>)line;
+                // process a line from comments csv
+                Console.WriteLine($"{counter++}: {lineData[opts.IdColumn]}: {lineData[opts.FeedbackColumn]}");
 
-            if (false == System.IO.File.Exists(opts.CommentsCsv))
-            {
-                Console.WriteLine($"Comments csv file ({opts.CommentsCsv}) does not exist.");
-                return;
-            }
-
-            // read comments file
-            using (var reader = new StreamReader(opts.CommentsCsv))
-            {
-                int counter = 1;
-                await foreach (var line in ReadAsync(reader, config))
+                string path = Path.Combine(opts.ReposFolder, lineData[opts.IdColumn]?.ToString() ?? "");
+                if (Directory.Exists(path))
                 {
-                    IDictionary<string, Object> lineData = (IDictionary<string, Object>)line;
-                    // process a line from comments csv
-                    Console.WriteLine($"{counter++}: {lineData[opts.IdColumn]}: {lineData[opts.FeedbackColumn]}");
-
-                    string path = Path.Combine(opts.ReposFolder, lineData[opts.IdColumn]?.ToString());
-                    if (Directory.Exists(path))
+                    if (opts.List)
                     {
-                        if (opts.List)
-                        {
-                            Console.WriteLine($"\t would run: gh pr comment --body \"{lineData[opts.FeedbackColumn]}\" on path {path}");
-                        }
-                        else
-                        {
-                            var p = ExecuteCommand("gh.exe", $"pr comment --body \"{lineData[opts.FeedbackColumn]}\"", path);
-                            if (p is not null)
-                            {
-                                await p.WaitForExitAsync();
-                            }
-                        }
+                        Console.WriteLine($"\t would run: gh pr comment --body \"{lineData[opts.FeedbackColumn]}\" on path {path}");
                     }
                     else
                     {
-                        Console.WriteLine($"Directory for answer repo ({path}) does not exist.");
+                        var p = ExecuteCommand("gh.exe", $"pr comment --body \"{lineData[opts.FeedbackColumn]}\"", path);
+                        if (p is not null)
+                        {
+                            await p.WaitForExitAsync();
+                        }
                     }
                 }
-            }
-        }
-
-        private static async IAsyncEnumerable<dynamic> ReadAsync(StreamReader reader, CsvConfiguration config)
-        {
-            using (var csv = new CsvReader(reader, config))
-            {
-                var records = csv.GetRecordsAsync<dynamic>();
-                await foreach (var line in records)
+                else
                 {
-                    yield return line;
+                    Console.WriteLine($"Directory for answer repo ({path}) does not exist.");
                 }
             }
         }
+    }
 
-        private static Process? ExecuteCommand(string file, string arguments, string workingDirectory)
+    private static async IAsyncEnumerable<dynamic> ReadAsync(StreamReader reader, CsvConfiguration config)
+    {
+        using (var csv = new CsvReader(reader, config))
         {
-            // Console.WriteLine($"would execute: {command} in {path}");
-            ProcessStartInfo processInfo;
-
-            processInfo = new ProcessStartInfo(file, arguments);
-            processInfo.WorkingDirectory = workingDirectory;
-            processInfo.CreateNoWindow = true;
-            processInfo.UseShellExecute = true;
-
-            Process? process = Process.Start(processInfo);
-            return process;
-        }
-
-        static void HandleParseError(IEnumerable<Error> errs)
-        {
-            //handle errors
-            Console.WriteLine("Reads comments from the csv file and runs 'gh pr comment --body \"\"' command on each repo. The repos folder must be the base folder for all the repos mentioned in the csv.");
+            var records = csv.GetRecordsAsync<dynamic>();
+            await foreach (var line in records)
+            {
+                yield return line;
+            }
         }
     }
+
+    private static Process? ExecuteCommand(string file, string arguments, string workingDirectory)
+    {
+        // Console.WriteLine($"would execute: {command} in {path}");
+        ProcessStartInfo processInfo;
+
+        processInfo = new ProcessStartInfo(file, arguments);
+        processInfo.WorkingDirectory = workingDirectory;
+        processInfo.CreateNoWindow = true;
+        processInfo.UseShellExecute = true;
+
+        Process? process = Process.Start(processInfo);
+        return process;
+    }
+
+    static void HandleParseError(IEnumerable<Error> errs)
+    {
+        //handle errors
+        Console.WriteLine("Reads comments from the csv file and runs 'gh pr comment --body \"\"' command on each repo. The repos folder must be the base folder for all the repos mentioned in the csv.");
+    }
 }
+

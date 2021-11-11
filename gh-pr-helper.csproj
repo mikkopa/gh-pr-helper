@@ -2,15 +2,16 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>ghprh</AssemblyName>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <RootNamespace>gh_pr_helper</RootNamespace>
-    <PublishTrimmed>true</PublishTrimmed>
-    <PublishReadyToRun>true</PublishReadyToRun>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
     <PublishSingleFile>true</PublishSingleFile>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <PublishReadyToRun>true</PublishReadyToRun>
 
-    <Version>1.0.0</Version>
+    <AssemblyName>ghprh</AssemblyName>
+
+    <Version>1.0.1</Version>
     <Authors>Mikko Pääkkönen</Authors>
     <NeutralLanguage>en</NeutralLanguage>    
   </PropertyGroup>

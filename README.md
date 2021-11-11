@@ -34,8 +34,8 @@ To login to GH
 - [GitHub Classroom Assistant](https://classroom.github.com/assistant)
 
 
-## build and publish
+## Publish
 
-Publish with `dotnet publish -c Release`
+1. For Windows, run `dotnet publish -c Release -r win-x64 --self-contained`
 
-Defaults to win-x64 with assembly name _ghprh.exe_
+https://docs.microsoft.com/en-us/dotnet/core/deploying/single-file#publish-a-single-file-app---cli
