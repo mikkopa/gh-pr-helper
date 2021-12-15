@@ -87,6 +87,12 @@ class Program
                         if (p is not null)
                         {
                             await p.WaitForExitAsync();
+                            if (p.ExitCode != 0)
+                            {
+                                string output = await p.StandardOutput.ReadToEndAsync();
+                                string error = await p.StandardError.ReadToEndAsync();
+                                Console.WriteLine($"\t{output}, FAIL: {error}"); 
+                            }
                         }
                     }
                 }
@@ -118,7 +124,9 @@ class Program
         processInfo = new ProcessStartInfo(file, arguments);
         processInfo.WorkingDirectory = workingDirectory;
         processInfo.CreateNoWindow = true;
-        processInfo.UseShellExecute = true;
+        processInfo.UseShellExecute = false;
+        processInfo.RedirectStandardOutput = true;
+        processInfo.RedirectStandardError = true;
 
         Process? process = Process.Start(processInfo);
         return process;
